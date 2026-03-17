@@ -2,7 +2,10 @@ import os
 import tempfile
 import shutil
 import pytest
-from auto_tagger.note_parser import ParsedNote, parse_note, collect_notes
+from auto_tagger.note_parser import (
+    ParsedNote, parse_note, collect_notes,
+    parse_note_with_config, collect_notes_with_config, _extract_content,
+)
 
 
 @pytest.fixture
@@ -155,3 +158,63 @@ class TestCollectNotes:
         notes = collect_notes(tmp_dir, sub_path="10. Literature/NotebookLM/LegalQuants")
         assert len(notes) == 1
         assert "note1.md" in notes[0].file_path
+
+
+class TestExtractContentUnified:
+    def test_structured_strategy(self, fixtures_dir):
+        path = os.path.join(fixtures_dir, "literature_standard.md")
+        with open(path, "r") as f:
+            lines = [l.rstrip("\n") for l in f.readlines()]
+        content = _extract_content(lines, tag_line_num=9, strategy="structured")
+        assert "quantitative" in content.lower() or "legal technology" in content.lower()
+        assert "## Summary" not in content
+        assert "## Keywords" not in content
+
+    def test_body_text_strategy(self, fixtures_dir):
+        path = os.path.join(fixtures_dir, "inbox_long.md")
+        with open(path, "r") as f:
+            lines = [l.rstrip("\n") for l in f.readlines()]
+        content = _extract_content(lines, tag_line_num=8, strategy="body_text")
+        assert "geopolitical" in content.lower()
+        assert len(content) <= 2200
+
+    def test_content_max_chars(self, fixtures_dir):
+        path = os.path.join(fixtures_dir, "inbox_long.md")
+        with open(path, "r") as f:
+            lines = [l.rstrip("\n") for l in f.readlines()]
+        content = _extract_content(lines, tag_line_num=8, strategy="body_text", max_chars=100)
+        assert len(content) <= 150
+
+
+class TestParseNoteWithConfig:
+    def test_standard_with_config(self, fixtures_dir):
+        path = os.path.join(fixtures_dir, "literature_standard.md")
+        config = {"tag_prefixes": ["topic", "theme"], "tag_line_fallbacks": {"literature": 9}}
+        note = parse_note_with_config(path, label="literature", content_strategy="structured", config=config)
+        assert note.file_path == path
+        assert note.tag_line_num == 9
+        assert note.has_topic_theme is False
+        assert note.label == "literature"
+
+    def test_custom_prefix_detection(self, fixtures_dir):
+        path = os.path.join(fixtures_dir, "custom_tags_note.md")
+        config = {"tag_prefixes": ["category", "subject"], "tag_line_fallbacks": {}}
+        note = parse_note_with_config(path, label="articles", content_strategy="body_text", config=config)
+        assert note.has_topic_theme is True
+        assert "#category/Philosophy" in note.existing_tags
+
+
+class TestCollectNotesWithConfig:
+    def test_config_driven_collection(self, tmp_dir, fixtures_dir):
+        lit_dir = os.path.join(tmp_dir, "MyNotes", "Articles")
+        os.makedirs(lit_dir)
+        shutil.copy(os.path.join(fixtures_dir, "literature_standard.md"), os.path.join(lit_dir, "note1.md"))
+        config = {
+            "vault_path": tmp_dir,
+            "tag_prefixes": ["topic", "theme"],
+            "note_directories": [{"path": "MyNotes/Articles", "label": "articles", "content_strategy": "structured"}],
+            "tag_line_fallbacks": {"articles": 9},
+        }
+        notes = collect_notes_with_config(config)
+        assert len(notes) == 1
+        assert notes[0].label == "articles"

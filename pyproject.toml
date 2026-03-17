@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "obsidian-universal-tagger"
+name = "obsidian-auto-tagger"
 version = "0.2.0"
 requires-python = ">=3.11"
 dependencies = [
@@ -18,5 +18,4 @@ dev = [
 ]
 
 [project.scripts]
-universal-tagger = "auto_tagger.cli:cli"
 auto-tagger = "auto_tagger.cli:cli"

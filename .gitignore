@@ -9,3 +9,4 @@ config.json
 *.md.tmp
 .DS_Store
 .env
+obsidian-universal-tagger-implementation-plan.md

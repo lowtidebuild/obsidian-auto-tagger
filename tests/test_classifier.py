@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from auto_tagger.classifier import _parse_response, _build_user_message
+from auto_tagger.classifier import _parse_response, _build_user_message, _build_system_prompt
 
 
 @dataclass
@@ -80,3 +80,43 @@ class TestBuildUserMessage:
         msg = _build_user_message(notes)
         assert "[1] Content A" in msg
         assert "[2] Content B" in msg
+
+
+class TestBuildSystemPrompt:
+    def test_standard_topic_theme(self):
+        taxonomy = {"topic": ["AI", "Law"], "theme": ["Innovation"]}
+        prefixes = ["topic", "theme"]
+        prompt = _build_system_prompt(taxonomy, prefixes)
+        assert "AI, Law" in prompt
+        assert "Innovation" in prompt
+        assert "topic" in prompt.lower()
+        assert "theme" in prompt.lower()
+
+    def test_custom_prefixes(self):
+        taxonomy = {"category": ["Philosophy"], "subject": ["Ethics", "Logic"]}
+        prefixes = ["category", "subject"]
+        prompt = _build_system_prompt(taxonomy, prefixes)
+        assert "Philosophy" in prompt
+        assert "Ethics, Logic" in prompt
+        assert "category" in prompt.lower()
+        assert "subject" in prompt.lower()
+
+    def test_single_prefix(self):
+        taxonomy = {"tag": ["AI", "Law", "Science"]}
+        prefixes = ["tag"]
+        prompt = _build_system_prompt(taxonomy, prefixes)
+        assert "AI, Law, Science" in prompt
+
+
+class TestParseResponseDynamic:
+    def _make_notes(self, count):
+        return [MockNote(file_path=f"/note{i}.md", content_for_classification=f"content {i}") for i in range(1, count + 1)]
+
+    def test_custom_prefix_response(self):
+        from auto_tagger.classifier import _parse_response_dynamic
+        notes = self._make_notes(1)
+        prefixes = ["category", "subject"]
+        response = '[{"id": 1, "category": ["Philosophy"], "subject": ["Ethics"]}]'
+        successes, failures = _parse_response_dynamic(response, notes, prefixes)
+        assert len(successes) == 1
+        assert successes[0].tags == {"category": ["Philosophy"], "subject": ["Ethics"]}

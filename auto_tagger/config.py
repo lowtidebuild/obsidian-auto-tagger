@@ -1,4 +1,4 @@
-"""Configuration loading, saving, and validation for universal tagger."""
+"""Configuration loading, saving, and validation for auto tagger."""
 
 import json
 import os

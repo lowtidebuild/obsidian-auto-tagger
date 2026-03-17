@@ -35,6 +35,11 @@ class ParsedNote:
     title: str
     content_for_classification: str
     source_folder: str  # "literature" | "inbox" | "resources"
+    label: str = ""
+
+    def __post_init__(self):
+        if not self.label:
+            self.label = self.source_folder
 
 
 def _find_frontmatter_end(lines: list[str]) -> int | None:
@@ -293,4 +298,118 @@ def collect_notes(vault_path: str, sub_path: str | None = None) -> list[ParsedNo
                         except Exception:
                             continue
 
+    return notes
+
+
+def _extract_content(
+    lines: list[str],
+    tag_line_num: int,
+    strategy: str = "body_text",
+    max_chars: int = CONTENT_MAX_CHARS,
+) -> str:
+    """Unified content extraction. Strategies: 'structured' (skip headers), 'body_text' (raw text)."""
+    after_tag = lines[tag_line_num + 1:] if tag_line_num + 1 < len(lines) else []
+    parts = []
+    for line in after_tag:
+        stripped = line.strip()
+        if not stripped:
+            if strategy == "body_text":
+                parts.append("")
+            continue
+        if stripped.startswith("## ") or stripped.startswith("# "):
+            if strategy == "structured":
+                continue
+            else:
+                parts.append(stripped)
+                continue
+        if EMBED_PATTERN.fullmatch(stripped):
+            continue
+        parts.append(stripped)
+    content = "\n".join(parts)
+    return content[:max_chars]
+
+
+def _has_prefixed_tags(tags: list[str], prefixes: list[str]) -> bool:
+    """Check if any tag starts with any of the given prefixes."""
+    for tag in tags:
+        for prefix in prefixes:
+            if tag.startswith(f"#{prefix}/"):
+                return True
+    return False
+
+
+def parse_note_with_config(
+    file_path: str, label: str, content_strategy: str, config: dict,
+) -> ParsedNote:
+    with open(file_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    stripped_lines = [l.rstrip("\n") for l in lines]
+    prefixes = config.get("tag_prefixes", ["topic", "theme"])
+    fallbacks = config.get("tag_line_fallbacks", {})
+
+    frontmatter_end = _find_frontmatter_end(stripped_lines)
+    tag_line_num = _detect_tag_line_by_pattern(stripped_lines, frontmatter_end)
+    if tag_line_num is None:
+        tag_line_num = fallbacks.get(label, 0)
+        if tag_line_num >= len(stripped_lines):
+            tag_line_num = 0
+
+    tag_line = stripped_lines[tag_line_num] if tag_line_num < len(stripped_lines) else ""
+    existing_tags = _extract_tags(tag_line)
+    has_topic_theme = _has_prefixed_tags(existing_tags, prefixes)
+    title = _extract_title(stripped_lines)
+
+    max_chars = config.get("content_max_chars", CONTENT_MAX_CHARS)
+    content = _extract_content(stripped_lines, tag_line_num, content_strategy, max_chars)
+
+    if title and title.lower() not in content.lower():
+        content = f"Title: {title}\n{content}"
+
+    return ParsedNote(
+        file_path=file_path, tag_line_num=tag_line_num,
+        existing_tags=existing_tags, has_topic_theme=has_topic_theme,
+        title=title, content_for_classification=content,
+        source_folder=label, label=label,
+    )
+
+
+def collect_notes_with_config(config: dict, sub_path: str | None = None) -> list[ParsedNote]:
+    vault_path = config["vault_path"]
+    notes = []
+    if sub_path:
+        target = os.path.join(vault_path, sub_path)
+        if not os.path.isdir(target):
+            return []
+        label = "default"
+        strategy = "body_text"
+        for nd in config.get("note_directories", []):
+            if nd["path"] in sub_path:
+                label = nd.get("label", "default")
+                strategy = nd.get("content_strategy", "body_text")
+                break
+        for root, _, files in os.walk(target):
+            for f in sorted(files):
+                if f.endswith(".md"):
+                    full_path = os.path.join(root, f)
+                    try:
+                        note = parse_note_with_config(full_path, label, strategy, config)
+                        notes.append(note)
+                    except Exception:
+                        continue
+    else:
+        for nd in config.get("note_directories", []):
+            target = os.path.join(vault_path, nd["path"])
+            if not os.path.isdir(target):
+                continue
+            label = nd.get("label", "default")
+            strategy = nd.get("content_strategy", "body_text")
+            for root, _, files in os.walk(target):
+                for f in sorted(files):
+                    if f.endswith(".md"):
+                        full_path = os.path.join(root, f)
+                        try:
+                            note = parse_note_with_config(full_path, label, strategy, config)
+                            notes.append(note)
+                        except Exception:
+                            continue
     return notes

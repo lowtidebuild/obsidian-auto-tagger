@@ -1,4 +1,4 @@
-# Obsidian Universal Tagger
+# Obsidian Auto Tagger
 
 Python CLI tool that applies configurable tags to ANY Obsidian vault notes using Claude AI.
 

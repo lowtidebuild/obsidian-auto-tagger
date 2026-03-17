@@ -40,15 +40,19 @@ def insert_tags(
     before = original_line.rstrip("\n")
 
     # Build new tags to add, skipping already-present ones
+    existing = set(before.split())
     new_tags = []
+    seen = set()
     for t in topics:
         tag = f"#topic/{t}"
-        if tag not in before:
+        if tag not in existing and tag not in seen:
             new_tags.append(tag)
+            seen.add(tag)
     for t in themes:
         tag = f"#theme/{t}"
-        if tag not in before:
+        if tag not in existing and tag not in seen:
             new_tags.append(tag)
+            seen.add(tag)
 
     # Nothing to add
     if not new_tags:
@@ -124,12 +128,15 @@ def insert_tags_dynamic(
     original_line = lines[tag_line_num]
     before = original_line.rstrip("\n")
 
+    existing = set(before.split())
     new_tags = []
+    seen = set()
     for prefix, values in tags.items():
         for v in values:
             tag = f"#{prefix}/{v}"
-            if tag not in before:
+            if tag not in existing and tag not in seen:
                 new_tags.append(tag)
+                seen.add(tag)
 
     if not new_tags:
         return {"file": file_path, "before": before, "after": before, "written": False}

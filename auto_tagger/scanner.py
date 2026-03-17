@@ -1,4 +1,4 @@
-"""Vault structure auto-detection for universal tagger init command."""
+"""Vault structure auto-detection for auto tagger init command."""
 
 import os
 import re

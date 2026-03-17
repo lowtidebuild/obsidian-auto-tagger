@@ -1,4 +1,4 @@
-"""CLI interface for Obsidian Universal Tagger."""
+"""CLI interface for Obsidian Auto Tagger."""
 
 import os
 import sys
@@ -75,7 +75,7 @@ def _load_config_or_exit() -> dict:
 
 @click.group()
 def cli():
-    """Obsidian Universal Tagger: Config-driven tagging for any Obsidian vault."""
+    """Obsidian Auto Tagger: Config-driven tagging for any Obsidian vault."""
     pass
 
 
