@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.egg-info/
+*.pyc
+.pytest_cache/
+taxonomy.json
+progress.json
+*.md.tmp
+.DS_Store
+.env
