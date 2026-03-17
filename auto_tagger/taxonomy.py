@@ -11,6 +11,9 @@ READING_NOTES_SUBDIR = os.path.join("10. Literature", "독서")
 # Pattern to match #topic/... and #theme/... tags
 TAG_PATTERN = re.compile(r"#(topic|theme)/(\S+)")
 
+# Pattern to match any #prefix/value tags with arbitrary prefixes
+DYNAMIC_TAG_PATTERN = re.compile(r"#([a-zA-Z]+)/(\S+)")
+
 # Pattern to detect a tag line: starts with # followed by non-space (not a heading)
 TAG_LINE_PATTERN = re.compile(r"^#[^\s#]")
 
@@ -143,4 +146,43 @@ def add_new_tags(
             existing.add(normalized)
         taxonomy["themes"] = sorted(existing)
 
+    save_taxonomy(taxonomy, taxonomy_path)
+
+
+def extract_tags_with_prefixes(file_path: str, prefixes: list[str]) -> dict[str, list[str]]:
+    """Extract tags matching given prefixes from a file."""
+    result = {p: [] for p in prefixes}
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    for match in DYNAMIC_TAG_PATTERN.finditer(content):
+        prefix, value = match.group(1).lower(), match.group(2)
+        if prefix in result:
+            normalized = normalize_tag(value)
+            result[prefix].append(normalized)
+    return result
+
+
+def extract_taxonomy_from_dir(dir_path: str, prefixes: list[str]) -> dict[str, list[str]]:
+    """Extract taxonomy from all .md files in a directory with given prefixes."""
+    if not os.path.isdir(dir_path):
+        raise FileNotFoundError(f"Taxonomy source directory not found: {dir_path}")
+    all_tags: dict[str, set[str]] = {p: set() for p in prefixes}
+    for filename in os.listdir(dir_path):
+        if not filename.endswith(".md"):
+            continue
+        file_path = os.path.join(dir_path, filename)
+        file_tags = extract_tags_with_prefixes(file_path, prefixes)
+        for prefix in prefixes:
+            all_tags[prefix].update(file_tags[prefix])
+    return {p: sorted(tags) for p, tags in all_tags.items()}
+
+
+def add_new_tags_dynamic(taxonomy_path: str, new_tags: dict[str, list[str]]) -> None:
+    """Add new tags with arbitrary prefixes to taxonomy.json."""
+    taxonomy = load_taxonomy(taxonomy_path)
+    for prefix, tags in new_tags.items():
+        existing = set(taxonomy.get(prefix, []))
+        for t in tags:
+            existing.add(normalize_tag(t))
+        taxonomy[prefix] = sorted(existing)
     save_taxonomy(taxonomy, taxonomy_path)

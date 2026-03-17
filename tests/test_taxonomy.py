@@ -10,6 +10,8 @@ from auto_tagger.taxonomy import (
     save_taxonomy,
     load_taxonomy,
     add_new_tags,
+    extract_taxonomy_from_dir,
+    extract_tags_with_prefixes,
 )
 
 
@@ -146,3 +148,54 @@ class TestAddNewTags:
         loaded = load_taxonomy(path)
         assert loaded["topics"].count("AI") == 1
         assert loaded["themes"].count("Innovation") == 1
+
+
+class TestExtractTaxonomyFromDir:
+    def test_from_explicit_directory(self, tmp_dir, fixtures_dir):
+        custom_dir = os.path.join(tmp_dir, "my_books")
+        os.makedirs(custom_dir)
+        shutil.copy(
+            os.path.join(fixtures_dir, "reading_note_sample.md"),
+            os.path.join(custom_dir, "sample.md"),
+        )
+        taxonomy = extract_taxonomy_from_dir(custom_dir, prefixes=["topic", "theme"])
+        assert "Technology" in taxonomy["topic"]
+        assert "Semiconductors" in taxonomy["theme"]
+
+    def test_custom_prefixes(self, tmp_dir, fixtures_dir):
+        custom_dir = os.path.join(tmp_dir, "articles")
+        os.makedirs(custom_dir)
+        shutil.copy(
+            os.path.join(fixtures_dir, "custom_tags_note.md"),
+            os.path.join(custom_dir, "phil.md"),
+        )
+        taxonomy = extract_taxonomy_from_dir(custom_dir, prefixes=["category", "subject"])
+        assert "Philosophy" in taxonomy["category"]
+        assert "Consciousness" in taxonomy["subject"]
+
+    def test_empty_directory(self, tmp_dir):
+        os.makedirs(os.path.join(tmp_dir, "empty"))
+        taxonomy = extract_taxonomy_from_dir(
+            os.path.join(tmp_dir, "empty"), prefixes=["topic", "theme"]
+        )
+        assert taxonomy == {"topic": [], "theme": []}
+
+    def test_nonexistent_directory(self, tmp_dir):
+        with pytest.raises(FileNotFoundError):
+            extract_taxonomy_from_dir(
+                os.path.join(tmp_dir, "nope"), prefixes=["topic"]
+            )
+
+
+class TestExtractTagsWithPrefixes:
+    def test_extracts_standard(self, fixtures_dir):
+        path = os.path.join(fixtures_dir, "reading_note_sample.md")
+        result = extract_tags_with_prefixes(path, prefixes=["topic", "theme"])
+        assert "Technology" in result["topic"]
+        assert "Semiconductors" in result["theme"]
+
+    def test_extracts_custom_prefixes(self, fixtures_dir):
+        path = os.path.join(fixtures_dir, "custom_tags_note.md")
+        result = extract_tags_with_prefixes(path, prefixes=["category", "subject"])
+        assert "Philosophy" in result["category"]
+        assert "Consciousness" in result["subject"]
