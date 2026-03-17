@@ -1,3 +1,3 @@
-"""Obsidian Auto-Tagger: Apply topic/theme tags to NotebookLM notes."""
+"""Obsidian Universal Tagger: Config-driven tagging for any Obsidian vault."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

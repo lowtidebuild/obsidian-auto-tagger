@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 taxonomy.json
 progress.json
+config.json
 *.md.tmp
 .DS_Store
 .env
