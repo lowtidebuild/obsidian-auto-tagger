@@ -104,3 +104,61 @@ def insert_tags(
         "after": after,
         "written": True,
     }
+
+
+def insert_tags_dynamic(
+    file_path: str,
+    tag_line_num: int,
+    tags: dict[str, list[str]],
+    dry_run: bool = False,
+) -> dict:
+    """
+    Insert tags with arbitrary prefixes.
+
+    Args:
+        tags: {"prefix": ["Value1", "Value2"]} e.g. {"topic": ["Law"], "theme": ["X"]}
+    """
+    with open(file_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    original_line = lines[tag_line_num]
+    before = original_line.rstrip("\n")
+
+    new_tags = []
+    for prefix, values in tags.items():
+        for v in values:
+            tag = f"#{prefix}/{v}"
+            if tag not in before:
+                new_tags.append(tag)
+
+    if not new_tags:
+        return {"file": file_path, "before": before, "after": before, "written": False}
+
+    after = before + " " + " ".join(new_tags)
+
+    if dry_run:
+        return {"file": file_path, "before": before, "after": after, "written": False}
+
+    lines[tag_line_num] = after + "\n"
+
+    dir_name = os.path.dirname(file_path)
+    fd, tmp_path = tempfile.mkstemp(dir=dir_name, suffix=".md.tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as tmp_f:
+            tmp_f.writelines(lines)
+
+        with open(tmp_path, "r", encoding="utf-8") as check_f:
+            new_line_count = len(check_f.readlines())
+        with open(file_path, "r", encoding="utf-8") as orig_f:
+            orig_line_count = len(orig_f.readlines())
+
+        if new_line_count != orig_line_count:
+            raise IOError(f"Line count mismatch: original={orig_line_count}, new={new_line_count}")
+
+        os.replace(tmp_path, file_path)
+    except Exception:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        raise
+
+    return {"file": file_path, "before": before, "after": after, "written": True}

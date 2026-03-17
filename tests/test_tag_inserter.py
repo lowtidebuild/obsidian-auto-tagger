@@ -3,6 +3,7 @@ import tempfile
 import shutil
 import pytest
 from auto_tagger.tag_inserter import insert_tags
+from auto_tagger.tag_inserter import insert_tags_dynamic
 
 
 @pytest.fixture
@@ -109,3 +110,54 @@ class TestInsertTags:
         assert "#theme/LegalTech" in tag_line
         # No newline between original and new tags (single line)
         assert tag_line.count("\n") <= 1  # only trailing newline
+
+
+CUSTOM_TAG_NOTE = """---
+title: "Test Note"
+source: "NotebookLM"
+created: 2024-05-01
+---
+
+#NotebookLM #TestTag
+
+## Summary
+Some content here.
+"""
+
+
+class TestInsertTagsDynamic:
+    def test_custom_prefixes(self, tmp_dir):
+        path = _make_note(tmp_dir, "custom.md", CUSTOM_TAG_NOTE)
+        result = insert_tags_dynamic(
+            path, tag_line_num=5, tags={"category": ["Philosophy", "Ethics"], "subject": ["Qualia"]},
+        )
+        assert result["written"] is True
+        assert "#category/Philosophy" in result["after"]
+        assert "#category/Ethics" in result["after"]
+        assert "#subject/Qualia" in result["after"]
+
+    def test_standard_prefixes_via_dynamic(self, tmp_dir):
+        path = _make_note(tmp_dir, "test.md", STANDARD_NOTE)
+        result = insert_tags_dynamic(
+            path, tag_line_num=9, tags={"topic": ["Law"], "theme": ["LegalTech"]},
+        )
+        assert "#topic/Law" in result["after"]
+        assert "#theme/LegalTech" in result["after"]
+
+    def test_idempotency_dynamic(self, tmp_dir):
+        path = _make_note(tmp_dir, "test.md", STANDARD_NOTE)
+        insert_tags_dynamic(path, tag_line_num=9, tags={"topic": ["Law"], "theme": ["X"]})
+        result = insert_tags_dynamic(path, tag_line_num=9, tags={"topic": ["Law"], "theme": ["X"]})
+        with open(path, "r") as f:
+            content = f.read()
+        assert content.count("#topic/Law") == 1
+
+    def test_dry_run_dynamic(self, tmp_dir):
+        path = _make_note(tmp_dir, "test.md", STANDARD_NOTE)
+        with open(path, "r") as f:
+            original = f.read()
+        result = insert_tags_dynamic(path, tag_line_num=9, tags={"topic": ["Law"]}, dry_run=True)
+        assert result["written"] is False
+        assert "#topic/Law" in result["after"]
+        with open(path, "r") as f:
+            assert f.read() == original
