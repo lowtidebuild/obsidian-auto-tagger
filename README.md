@@ -20,11 +20,9 @@
 
 Obsidian Auto Tagger reads your vault, understands its structure, and uses **Claude AI** to classify every untagged note with the right tags — then writes them back, safely.
 
-```
-  ┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌───────────┐
-  │  Scan Vault  │────▶│ Build Config │────▶│  Claude AI   │────▶│ Write Tags│
-  │  Structure   │     │ & Taxonomy   │     │ Classifies   │     │  Safely   │
-  └─────────────┘     └──────────────┘     └──────────────┘     └───────────┘
+```mermaid
+graph LR
+    A["🔍 Scan Vault\nStructure"] --> B["⚙️ Build Config\n& Taxonomy"] --> C["🧠 Claude AI\nClassifies"] --> D["✍️ Write Tags\nSafely"]
 ```
 
 ### Before & After
@@ -271,17 +269,14 @@ Commands:
 
 Obsidian Auto Tagger is designed to never corrupt your notes:
 
-```
-                    ┌─────────────────────────────────┐
-                    │        Safety Pipeline           │
-                    ├─────────────────────────────────┤
-                    │                                  │
-  Write tags ──────▶│  1. Write to temp file           │
-                    │  2. Verify line count matches     │
-                    │  3. Atomic rename (os.replace)    │
-                    │  4. Original untouched on failure │
-                    │                                  │
-                    └─────────────────────────────────┘
+```mermaid
+graph TD
+    A["✍️ Write Tags"] --> B["1. Write to temp file"]
+    B --> C["2. Verify line count matches"]
+    C --> D["3. Atomic rename — os.replace()"]
+    D --> E{"Success?"}
+    E -- Yes --> F["✅ Tags written safely"]
+    E -- No --> G["🛡️ Original untouched"]
 ```
 
 - **Idempotent**: Existing tags are detected and never duplicated
