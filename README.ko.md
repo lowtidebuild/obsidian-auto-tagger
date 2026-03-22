@@ -16,6 +16,12 @@
 
 </div>
 
+> **📢 Claude Code 버전을 찾고 계신가요?**
+>
+> 이 도구의 핵심 기능이 [**Obsidian Vault Doctor**](https://github.com/your-username/obsidian-vault-doctor)에 내장 스킬로 통합되었습니다. Vault Doctor는 Haiku/Sonnet API 호출 대신 Claude Code의 심층 추론을 사용하여 더 높은 태깅 품질을 달성하며, `vault-rules.json`으로 설정이 통합되어 별도 API 키 관리가 불필요합니다. Claude Code를 사용하신다면 Vault Doctor를 권장합니다.
+>
+> 이 독립 Python CLI는 가벼운 API 기반 접근을 선호하는 사용자를 위해 유지됩니다.
+
 ## ✨ 이게 뭘 하는 건가요?
 
 Obsidian Auto Tagger는 볼트의 구조를 스캔하고, **Claude AI**로 태그가 없는 노트를 분류한 뒤, 안전하게 태그를 삽입합니다.

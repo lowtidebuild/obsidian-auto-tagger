@@ -16,6 +16,12 @@
 
 </div>
 
+> **📢 Looking for the Claude Code version?**
+>
+> The core functionality of this tool has been integrated into [**Obsidian Vault Doctor**](https://github.com/your-username/obsidian-vault-doctor) as a built-in skill. Vault Doctor uses Claude Code's deliberate reasoning (instead of Haiku/Sonnet API calls) for higher tagging quality, unified configuration via `vault-rules.json`, and no API key management. If you use Claude Code, Vault Doctor is the recommended way to auto-tag your vault.
+>
+> This standalone Python CLI remains available for users who prefer a lightweight, API-based approach.
+
 ## ✨ What It Does
 
 Obsidian Auto Tagger reads your vault, understands its structure, and uses **Claude AI** to classify every untagged note with the right tags — then writes them back, safely.
