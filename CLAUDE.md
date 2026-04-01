@@ -25,3 +25,9 @@ Python CLI tool that applies configurable tags to ANY Obsidian vault notes using
 - Line count must be preserved after tag insertion
 - PascalCase normalization for all tags
 - All vault-specific knowledge lives in config.json (no hardcoded paths)
+
+## Security
+
+- **NEVER** read, cat, print, or access `.env` files directly
+- **NEVER** output API keys, secrets, or credentials in responses
+- When debugging environment issues, ask the user to verify env vars are set — do not read them yourself
