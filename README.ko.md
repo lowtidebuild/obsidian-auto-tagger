@@ -351,6 +351,6 @@ pytest tests/test_classifier.py -v
 
 ## 📄 라이선스
 
-MIT
+[Apache License 2.0](LICENSE) 하에 배포됩니다.
 
 </div>
